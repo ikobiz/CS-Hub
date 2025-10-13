@@ -35,8 +35,6 @@ namespace Gohub
             Console.WriteLine("1. Edit A File");
             Console.WriteLine("2. Create A File");
             Console.WriteLine("3. Exit");
-            Console.WriteLine("4. Create A Go Project");
-            Console.WriteLine("5. Open A Go Project");
 
             Console.Write("Your Choice: ");
             string? option = Console.ReadLine();
