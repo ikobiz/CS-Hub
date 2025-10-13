@@ -16,7 +16,7 @@ namespace Gohub
                 return;
             }
 
-            Console.WriteLine("Welcome to Gohub!");
+            Console.WriteLine("Welcome to C# Hub!");
             Menu();
         }
 
@@ -59,175 +59,13 @@ namespace Gohub
             {
                 Exit();
             }
-            else if (option == "4")
-            {
-                CreateGoProject();
-                Menu();
-            }
-            else if (option == "5")
-            {
-                OpenGoProject();
-                Menu();
-            }
+        
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
                 Menu();
             }
         }
-
-        #region Open Go Project
-            
-        static void OpenGoProject()
-        {
-            Application.Init();
-
-            var folderDialog = new OpenDialog("Open Go Project", "Select the root folder of a Go project")
-            {
-                AllowsMultipleSelection = false,
-                CanChooseDirectories = true,
-                CanChooseFiles = false
-            };
-
-            Application.Run(folderDialog);
-            Application.Shutdown();
-
-            if (folderDialog.FilePaths.Count == 0)
-            {
-                Console.WriteLine("No folder selected.");
-                return;
-            }
-
-            string projectPath = folderDialog.FilePaths[0];
-            string goModPath = Path.Combine(projectPath, "go.mod");
-
-            if (!File.Exists(goModPath))
-            {
-                Console.WriteLine("This folder does not contain a go.mod file. Not a valid Go project.");
-                return;
-            }
-
-            string mainGoPath = Path.Combine(projectPath, "main.go");
-
-            if (File.Exists(mainGoPath))
-            {
-                Console.WriteLine("Opening main.go...");
-                Edit(mainGoPath);
-            }
-            else
-            {
-                Console.WriteLine("main.go not found. Let’s pick a .go file to open.");
-                Application.Init();
-
-                var fileDialog = new OpenDialog("Select a Go File", "Choose a .go file to open")
-                {
-                    AllowsMultipleSelection = false,
-                    CanChooseDirectories = false,
-                    AllowedFileTypes = new string[] { ".go" },
-                    DirectoryPath = projectPath
-                };
-
-                Application.Run(fileDialog);
-                Application.Shutdown();
-
-                if (fileDialog.FilePaths.Count > 0)
-                {
-                    Edit(fileDialog.FilePaths[0]);
-                }
-                else
-                {
-                    Console.WriteLine("No file selected.");
-                }
-            }
-        }
-        #endregion
-
-        #region Create Go Project
-
-        static void CreateGoProject()
-        {
-            Application.Init();
-
-            var folderDialog = new OpenDialog("Select Parent Folder", "Choose where to create the Go project")
-            {
-                AllowsMultipleSelection = false,
-                CanChooseDirectories = true,
-                CanChooseFiles = false
-            };
-
-            Application.Run(folderDialog);
-
-            if (folderDialog.FilePaths.Count == 0)
-            {
-                Application.Shutdown();
-                Console.WriteLine("No folder selected.");
-                return;
-            }
-
-            string parentFolder = folderDialog.FilePaths[0];
-
-            var nameDialog = new Dialog("New Go Project", 60, 10);
-            var input = new TextField("")
-            {
-                X = 1,
-                Y = 1,
-                Width = 50
-            };
-            nameDialog.Add(new Label("Project name:") { X = 1, Y = 0 });
-            nameDialog.Add(input);
-
-            string? projectName = null;
-            var ok = new Button("Create", is_default: true);
-            ok.Clicked += () =>
-            {
-                projectName = input.Text?.ToString();
-                Application.RequestStop();
-            };
-            nameDialog.AddButton(ok);
-            var cancelBtn = new Button("Cancel");
-            cancelBtn.Clicked += () => Application.RequestStop();
-            nameDialog.AddButton(cancelBtn);
-
-            Application.Run(nameDialog);
-            Application.Shutdown();
-
-            if (!string.IsNullOrWhiteSpace(projectName))
-            {
-                string projectPath = Path.Combine(parentFolder, projectName);
-                try
-                {
-                    Directory.CreateDirectory(projectPath);
-
-                    string goMod = $"module {projectName}\n\ngo 1.21\n";
-                    File.WriteAllText(Path.Combine(projectPath, "go.mod"), goMod);
-
-                    string mainGo = @"package main
-
-import ""fmt""
-
-func main() {
-    fmt.Println(""Hello from GoHub!"")
-}";
-                    string mainGoPath = Path.Combine(projectPath, "main.go");
-                    File.WriteAllText(mainGoPath, mainGo);
-
-                    Console.WriteLine($"Go project created at: {projectPath}");
-                    Edit(mainGoPath);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error creating Go project: {ex.Message}");
-                }
-            }
-            else
-            {
-                Console.WriteLine("No project name provided.");
-            }
-        }
-
-
-        #endregion
-
 
         #region Create File
 
