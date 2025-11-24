@@ -99,6 +99,10 @@ namespace Gohub
                 ShowHelp();
                 Menu();
             }
+            else if (option == "11")
+            {
+                OpenUrl("https://discord.gg/BXMzNu4t");
+            }
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
