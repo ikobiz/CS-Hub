@@ -10,6 +10,7 @@ namespace Gohub
 {
     class Program
     {
+
         #region Fields
         static string? selectedFile;
         static List<string>? projectCsFiles;
@@ -41,6 +42,118 @@ namespace Gohub
         #endregion
 
         #region Menu
+
+        static void Menu2_1()
+        {
+            Console.WriteLine("4. Create a new C# Project");
+            Console.WriteLine("5. Open a C# Project");
+            Console.WriteLine("6. Manage NuGet Packages");
+            switch (option)
+            {
+                case "4":
+                    CreateCSharpProjectIntro();
+                    Menu2();
+                    break;
+                case "5":
+                    OpenCSharpProject();
+                    Menu2();
+                    break;
+                case "6":
+                    ManageNuGetPackages();
+                    Menu2();
+                    break;
+                default:
+                    Console.WriteLine("Invalid option. Please try again.");
+                    Menu2();
+                    break;
+            }   
+
+        }
+
+        static void menu2_2()
+        {
+            Console.WriteLine("7. View Documentation");\
+            Console.WriteLine("9. About");
+            Console.WriteLine("10. Help");
+            Console.WriteLine("11. Discord Server");
+            Console.WriteLine("12. Github page");
+            Console.Write("Your Choice: ");
+            string option = Console.ReadLine();
+            switch (option)
+            {
+                case "7":
+                    OpenUrl("");
+                    Menu2();
+                    break;
+                case "9":
+                    // About placeholder
+                    Console.WriteLine("CS-Hub — A terminal GUI hub for C# (v0.0.3.4+).");
+                    Menu2();
+                    break;   
+                case "10":
+                    ShowHelp();
+                    Menu2();
+                    break;    
+                case "11":
+                    OpenUrl("https://discord.gg/BXMzNu4t");
+                    Menu2();
+                    break;
+                case "12":
+                    OpenUrl("https://github.com/ikobiz/CS-Hub"); 
+                    Menu2();
+                    break;   
+
+        }
+
+        static void Menu2()
+        {
+            Console.WriteLine("\nChoose n option to continue:")
+            Console.WriteLine("1. Edit A File");
+            Console.WriteLine("2. Create A File");
+            Console.WriteLine("3. Exit");
+            Console.WriteLine("4. C# Options")
+            Console.WriteLine("5. Online tools and resources")
+            Console.WriteLine("6. Settings(comming soon...)");
+            Console.Write("Your Choice: ");
+            string option = Console.ReadLine();
+            switch (option)
+            {
+                case "1":
+                    SelectFile();
+                    if (!string.IsNullOrEmpty(selectedFile))
+                    {
+                        Edit(selectedFile);
+                    }
+                    Menu2();
+                    break;
+                case "2":
+                    CreateFile();
+                    Menu2();
+                    break;
+                case "3":
+                    Exit();
+                    break;
+                case "4":
+                    Menu2_1();
+                    Menu2();
+                    break;
+                case "5":
+                    // Online tools and resources placeholder
+                    Console.WriteLine("Online tools and resources are coming soon...");
+                    Menu2();
+                    break;
+                case "6":
+                    // Settings placeholder
+                    Console.WriteLine("Settings are coming soon...");
+                    Menu2();
+                    break;
+                default:
+                    Console.WriteLine("Invalid option. Please try again.");
+                    Menu2();
+                    break;
+            }
+        }
+
 
         static void Menu()
         {
