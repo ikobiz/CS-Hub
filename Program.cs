@@ -30,6 +30,8 @@ namespace Gohub
             }
 
             Console.WriteLine("Welcome to C# Hub!");
+            Directory.CreateDirectory(@"settings");
+
             Menu();
         }
 
@@ -386,36 +388,58 @@ namespace Gohub
         static void CreateCSharpProject(string projectPath, string projectName, string projectType)
         {
 
-            #region Create C# Project Using dotnet CLI
+            #region Create C# Project Using dotnet CLI (Cross-platform)
+            Directory.CreateDirectory(projectPath);
+            string projectTypeName = projectType == "1" ? "console"
+                : projectType == "2" ? "classlib"
+                : projectType == "3" ? "blazorwasm"
+                : projectType == "4" ? "webapi"
+                : projectType == "5" ? "wpf"
+                : "winforms";
 
-            ProcessStartInfo psi = new ProcessStartInfo
+            string arguments = $"new {projectTypeName} -n \"{projectName}\"";
+
+            ProcessStartInfo psi;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                FileName = "cmd.exe",
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                psi = new ProcessStartInfo
+                {
+                    FileName = "dotnet",
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = projectPath
+                };
+            }
+            else
+            {
+                psi = new ProcessStartInfo
+                {
+                    FileName = "dotnet",
+                    Arguments = arguments,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    WorkingDirectory = projectPath
+                };
+            }
 
-            Process process = new Process { StartInfo = psi };
-            process.Start();
-
-            // 4. Pass the commands
-            process.StandardInput.WriteLine($"cd /d \"{projectPath}\"");  // Command 1: Change directory
-            process.StandardInput.WriteLine($"dotnet new {(projectType == "1" ? "console" : projectType == "2" ? "classlib" : projectType == "3" ? "blazorwasm" : projectType == "4" ? "webapi" : projectType == "5" ? "wpf" : "winforms")} -n \"{projectName}\""); // Command 2: Create new project
-            /// process.StandardInput.WriteLine("echo %CD%");   // Command 2: Print current directory
-
-            process.StandardInput.Flush();
-            process.StandardInput.Close();
-
-            process.WaitForExit();
-
-            string output = process.StandardOutput.ReadToEnd();
-
-            Console.WriteLine("--- OUTPUT ---");
-            // The output will contain "C:\Users"
-            Console.WriteLine(output);
-
+            using (var process = Process.Start(psi))
+            {
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                process.WaitForExit();
+                Console.WriteLine("--- OUTPUT ---");
+                Console.WriteLine(output);
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    Console.WriteLine("--- ERROR ---");
+                    Console.WriteLine(error);
+                }
+            }
             #endregion
         }
 
