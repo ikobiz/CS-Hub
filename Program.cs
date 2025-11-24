@@ -47,6 +47,7 @@ namespace Gohub
             Console.WriteLine("9. About(comming soon...)");
             Console.WriteLine("10. Help(comming soon...)");
             Console.WriteLine("11. Discord Server(comming soon...)");
+            Console.WriteLine("12. Github page");
 
             Console.Write("Your Choice: ");
             string? option = Console.ReadLine();
@@ -89,7 +90,15 @@ namespace Gohub
             {
                 OpenUrl("https://github.com/ikobiz/CS-Hub/blob/main/README.md");
             }
+            else if (option == "12")
+            {
+                OpenUrl("https://github.com/ikobiz/CS-Hub");
 
+            else if (option == "10")
+            {
+                ShowHelp();
+                Menu();
+            }
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
@@ -805,6 +814,63 @@ namespace Gohub
             {
                 Console.WriteLine($"Failed to open URL: {ex.Message}");
             }
+        }
+
+        // --- Add this method into the Program class (near other helpers like ShowTextOutputDialog) ---
+
+        static void ShowHelp()
+        {
+            // Prefer showing README.md if it exists in the current working directory
+            string readmePath = Path.Combine(Environment.CurrentDirectory, "README.md");
+            string helpText;
+
+            if (File.Exists(readmePath))
+            {
+                try
+                {
+                    helpText = File.ReadAllText(readmePath);
+                }
+                catch (Exception ex)
+                {
+                    helpText = $"Failed to read README.md: {ex.Message}\n\nFalling back to built-in help.\n\n";
+                }
+            }
+            else
+            {
+                helpText = string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(helpText))
+            {
+                // Fallback built-in help summary
+                helpText = @"CS-Hub - Help (v0.0.2)
+
+Main menu:
+  1  Edit A File         - Open a file in the built-in editor.
+  2  Create A File       - Create a new empty file.
+  3  Exit                - Quit the app.
+  4  Create a new C# Project - Uses 'dotnet new' to scaffold projects.
+  5  Open a C# Project   - Select a folder, open any .cs files found (recursive).
+  6  Manage NuGet Packages - List, add, remove NuGet packages via the dotnet CLI.
+  7  View Documentation  - Opens the README on GitHub (if wired to OpenUrl).
+ 10  Help                - Show this help screen.
+ 12  Github page         - Open project GitHub page in default browser.
+
+Editor controls:
+  - Save: File -> Save (or Save menu item)
+  - Find: File -> Find (search and jump to results)
+  - Prev/Next: File -> Prev / Next (or Ctrl+Left / Ctrl+Right) to hop between .cs files in the project list (auto-saves on hop)
+  - Quit editor: File -> Quit
+
+Notes:
+  - .NET SDK (dotnet) must be installed and on PATH for project creation and NuGet management.
+  - Add/Remove NuGet currently prompts on the console; results are shown in dialogs.
+  - If you'd like the add/remove prompts converted to Terminal.Gui dialogs, or if you want package lists shown as selectable lists, ask and I will patch it.
+
+If you need more detail for any item, pick a menu number and I can expand the help for it.";
+            }
+
+            ShowTextOutputDialog("Help - CS-Hub", helpText, 100, 30);
         }
     }
 }
