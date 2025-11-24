@@ -1,3 +1,4 @@
+        
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,6 +24,11 @@ namespace Gohub
 
         static void Main(string[] args)
         {
+            var exeDir = AppContext.BaseDirectory;
+            var settingsDir = Path.Combine(exeDir, "settings");
+            Directory.CreateDirectory(settingsDir);
+            var settingsPath = Path.Combine(settingsDir, "settings.conf");
+
             if (args.Length == 1)
             {
                 Edit(args[0]);
@@ -30,9 +36,29 @@ namespace Gohub
             }
 
             Console.WriteLine("Welcome to C# Hub!");
-            Directory.CreateDirectory(@"settings");
+            
+            bool menuoptionexists = File.Exists(settingsPath);
 
-            Menu();
+            if (!menuoptionexists)
+            {
+                // create the file with a default setting
+                try
+                {
+                    using (StreamWriter sw = File.CreateText(settingsPath))
+                    {
+                        sw.WriteLine("menustyle = full");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to create settings file: {ex.Message}");
+                }
+            }
+
+            var style = GetMenuStyle(settingsPath);
+            if (style == MenuStyle.Full) { Menu(); }
+            else if (style == MenuStyle.Minimal) { Menu2(); }
+            else { Menu(); } // fallback/default
         }
 
         static void Exit()
@@ -121,7 +147,7 @@ namespace Gohub
             Console.WriteLine("3. Exit");
             Console.WriteLine("4. C# Options");
             Console.WriteLine("5. Online tools and resources");
-            Console.WriteLine("6. Settings(comming soon...);");
+            Console.WriteLine("6. Settings");
             Console.Write("Your Choice: ");
             string option = Console.ReadLine();
             switch (option)
@@ -151,8 +177,11 @@ namespace Gohub
                     Menu2();
                     break;
                 case "6":
-                    // Settings placeholder
-                    Console.WriteLine("Settings are coming soon...");
+                    var exeDir = AppContext.BaseDirectory;
+                    var settingsDir = Path.Combine(exeDir, "settings");
+                    Directory.CreateDirectory(settingsDir);
+                    var settingsPath = Path.Combine(settingsDir, "settings.conf");
+                    ShowSettingsDialog(settingsPath);
                     Menu2();
                     break;
                 default:
@@ -173,7 +202,7 @@ namespace Gohub
             Console.WriteLine("5. Open a C# Project");
             Console.WriteLine("6. Manage NuGet Packages");
             Console.WriteLine("7. View Documentation");
-            Console.WriteLine("8. Settings(comming soon...)");
+            Console.WriteLine("8. Settings");
             Console.WriteLine("9. About");
             Console.WriteLine("10. Help");
             Console.WriteLine("11. Discord Server");
@@ -222,9 +251,12 @@ namespace Gohub
             }
             else if (option == "8")
             {
-                // Settings placeholder
-                Console.WriteLine("Settings are coming soon...");
-                Menu();
+                var exeDir = AppContext.BaseDirectory;
+                    var settingsDir = Path.Combine(exeDir, "settings");
+                    Directory.CreateDirectory(settingsDir);
+                    var settingsPath = Path.Combine(settingsDir, "settings.conf");
+                    ShowSettingsDialog(settingsPath);
+                    Menu();
             }
             else if (option == "9")
             {
@@ -954,6 +986,79 @@ namespace Gohub
 
         #region Utilities
 
+// Show a TUI dialog to change menu style and save to settings.conf
+        static void ShowSettingsDialog(string settingsPath)
+        {
+            Application.Init();
+            var dlg = new Dialog("Settings", 50, 12);
+
+            var currentStyle = GetMenuStyle(settingsPath);
+            int selected = currentStyle == MenuStyle.Minimal ? 1 : 0;
+
+            var radio = new RadioGroup(2, 2, new NStack.ustring[] { "Full", "Minimal" }, selected);
+            dlg.Add(radio);
+
+            var saveBtn = new Button("Save") { X = 2, Y = 7 };
+            saveBtn.Clicked += () =>
+            {
+                var style = radio.SelectedItem == 1 ? "minimal" : "full";
+                try
+                {
+                    File.WriteAllText(settingsPath, $"menustyle = {style}\n");
+                    MessageBox.Query(40, 7, "Saved", $"Menu style set to {style}.", "OK");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ErrorQuery(40, 7, "Error", $"Failed to save: {ex.Message}", "OK");
+                }
+                Application.RequestStop();
+            };
+            dlg.AddButton(saveBtn);
+
+            var cancelBtn = new Button("Cancel") { X = 12, Y = 7 };
+            cancelBtn.Clicked += () => Application.RequestStop();
+            dlg.AddButton(cancelBtn);
+
+            Application.Run(dlg);
+            Application.Shutdown();
+        }
+
+
+
+
+
+        // Menu style enum
+        enum MenuStyle { Unknown = 0, Full, Minimal }
+
+        // Reads the settings file and returns the menu style (Full, Minimal, or Unknown)
+        static MenuStyle GetMenuStyle(string path)
+        {
+            if (!File.Exists(path)) return MenuStyle.Unknown;
+
+            foreach (var raw in File.ReadLines(path))
+            {
+                var line = raw.Trim();
+                if (line.Length == 0) continue;
+                if (line.StartsWith("#") || line.StartsWith("//") || line.StartsWith(";")) continue; // ignore comments
+
+                var parts = line.Split(new[] { '=' }, 2);
+                if (parts.Length != 2) continue;
+
+                var key = parts[0].Trim();
+                var val = parts[1].Trim().Trim('"'); // strip optional quotes
+
+                if (!key.Equals("menustyle", StringComparison.OrdinalIgnoreCase)) continue;
+
+                if (val.Equals("full", StringComparison.OrdinalIgnoreCase)) return MenuStyle.Full;
+                if (val.Equals("minimal", StringComparison.OrdinalIgnoreCase) || val.Equals("minimalistic", StringComparison.OrdinalIgnoreCase)) return MenuStyle.Minimal;
+
+                return MenuStyle.Unknown;
+            }
+
+            return MenuStyle.Unknown;
+        }
+
+        
         // Helper to quote a path if it contains spaces (used when passing a project path)
         static string QuotePath(string path)
         {
@@ -1065,3 +1170,4 @@ If you need more detail for any item, pick a menu number and I can expand the he
         #endregion
 
             }    }
+
