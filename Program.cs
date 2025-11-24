@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using Terminal.Gui;
 
@@ -35,6 +36,7 @@ namespace Gohub
             Console.WriteLine("1. Edit A File");
             Console.WriteLine("2. Create A File");
             Console.WriteLine("3. Exit");
+            Console.WriteLine("4. Create a new C# Project");
 
             Console.Write("Your Choice: ");
             string? option = Console.ReadLine();
@@ -57,12 +59,96 @@ namespace Gohub
             {
                 Exit();
             }
+            else if (option == "4")
+            {
+                CreateCSharpProjectIntro();
+                Menu();
+            }
         
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
                 Menu();
             }
+        }
+
+        static void CreateCSharpProjectIntro()
+        {
+            Console.WriteLine("Enter project name: ");
+            string projectName = Console.ReadLine();
+
+            Console.WriteLine("Enter project location (full path): ");
+            string projectLocation = Console.ReadLine();
+
+            Console.WriteLine("Creating a new C# Project...");
+
+            string projectPath = Path.Combine(projectLocation, projectName);
+            Directory.CreateDirectory(projectPath);
+
+            Console.WriteLine("What type of project would you like to create?");
+
+            Console.WriteLine("1. Console Application");
+            Console.WriteLine("2. Class Library");
+            Console.WriteLine("3. Blazor Web App");
+            Console.WriteLine("4. ASP.NET Core Web API");
+            Console.WriteLine("5. WPF Application");
+            Console.WriteLine("6. Windows Forms App");
+            Console.Write("Your Choice: ");
+            string projectTypeOption = Console.ReadLine();
+
+            if (projectTypeOption == "1" ||
+                projectTypeOption == "2" ||
+                projectTypeOption == "3" ||
+                projectTypeOption == "4" ||
+                projectTypeOption == "5" ||
+                projectTypeOption == "6")
+            {
+                CreateCSharpProject(projectPath, projectName, projectTypeOption);
+            }
+            else
+            {
+                Console.WriteLine("Invalid option. Defaulting to Console Application.");
+                projectTypeOption = "1";
+                CreateCSharpProject(projectPath, projectName, projectTypeOption);
+            }
+
+
+        }
+
+        static void CreateCSharpProject(string projectPath, string projectName, string projectType)
+        {
+
+#region Create C# Project Using dotnet CLI
+
+            ProcessStartInfo psi = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        Process process = new Process { StartInfo = psi };
+        process.Start();
+
+        // 4. Pass the commands
+        process.StandardInput.WriteLine($"cd /d \"{projectPath}\"");  // Command 1: Change directory
+        process.StandardInput.WriteLine($"dotnet new {(projectType == "1" ? "console" : projectType == "2" ? "classlib" : projectType == "3" ? "blazorwasm" : projectType == "4" ? "webapi" : projectType == "5" ? "wpf" : "winforms")} -n \"{projectName}\""); // Command 2: Create new project
+        /// process.StandardInput.WriteLine("echo %CD%");   // Command 2: Print current directory
+
+        process.StandardInput.Flush();
+        process.StandardInput.Close(); 
+
+        process.WaitForExit();
+
+        string output = process.StandardOutput.ReadToEnd();
+        
+        Console.WriteLine("--- OUTPUT ---");
+        // The output will contain "C:\Users"
+        Console.WriteLine(output);
+
+#endregion
         }
 
         #region Create File
