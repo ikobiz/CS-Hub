@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using Terminal.Gui;
 
 namespace Gohub
@@ -39,12 +40,12 @@ namespace Gohub
             Console.WriteLine("3. Exit");
             Console.WriteLine("4. Create a new C# Project");
             Console.WriteLine("5. Open a C# Project");
-            Console.WriteLine("6. Manage NuGet Packages(comming soon...)");
+            Console.WriteLine("6. Manage NuGet Packages");
             Console.WriteLine("7. View Documentation(comming soon...)");
             Console.WriteLine("8. Settings(comming soon...)");
             Console.WriteLine("9. About(comming soon...)");
             Console.WriteLine("10. Help(comming soon...)");
-            Console.WriteLine("11.Discord Server(comming soon...)");
+            Console.WriteLine("11. Discord Server(comming soon...)");
 
             Console.Write("Your Choice: ");
             string? option = Console.ReadLine();
@@ -77,7 +78,12 @@ namespace Gohub
                 OpenCSharpProject();
                 Menu();
             }
-        
+            else if (option == "6")
+            {
+                // <-- wired ManageNuGetPackages to menu option 6
+                ManageNuGetPackages();
+                Menu();
+            }
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
@@ -529,5 +535,225 @@ namespace Gohub
         }
     }
 }
+
+        // --- Add these helpers and method into the Program class ---
+
+        static (string Stdout, string Stderr, int ExitCode) RunProcessCapture(string fileName, string arguments, string? workingDirectory = null, int timeoutMs = 120_000)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory
+            };
+
+            try
+            {
+                using var proc = Process.Start(psi);
+                if (proc == null) return (string.Empty, "Failed to start process.", -1);
+
+                string stdout = proc.StandardOutput.ReadToEnd();
+                string stderr = proc.StandardError.ReadToEnd();
+
+                bool exited = proc.WaitForExit(timeoutMs);
+                if (!exited)
+                {
+                    try { proc.Kill(true); } catch { }
+                    return (stdout, stderr + "\n(Process killed due to timeout)", proc.HasExited ? proc.ExitCode : -1);
+                }
+
+                return (stdout, stderr, proc.ExitCode);
+            }
+            catch (Exception ex)
+            {
+                return (string.Empty, $"Exception running process: {ex.Message}", -1);
+            }
+        }
+
+        static void ShowTextOutputDialog(string title, string text, int width = 80, int height = 20)
+        {
+            Application.Init();
+            var dlg = new Dialog(title, Math.Min(width, Console.WindowWidth - 2), Math.Min(height, Console.WindowHeight - 2));
+
+            var tv = new TextView()
+            {
+                Text = text,
+                ReadOnly = true,
+                X = 0,
+                Y = 0,
+                Width = Dim.Fill(),
+                Height = Dim.Fill() - 2
+            };
+            dlg.Add(tv);
+
+            var close = new Button("Close") { X = Pos.Center(), Y = Pos.AnchorEnd(1) };
+            close.Clicked += () => Application.RequestStop();
+            dlg.AddButton(close);
+
+            Application.Run(dlg);
+            Application.Shutdown();
+        }
+
+        static void ManageNuGetPackages()
+        {
+            // 1) Ask user to pick a folder (project root)
+            Application.Init();
+            var folderDialog = new OpenDialog("Select Project Folder", "Choose a folder containing .csproj")
+            {
+                AllowsMultipleSelection = false,
+                CanChooseDirectories = true,
+                CanChooseFiles = false
+            };
+            Application.Run(folderDialog);
+            Application.Shutdown();
+
+            if (folderDialog.FilePaths.Count == 0)
+            {
+                Console.WriteLine("No folder selected.");
+                return;
+            }
+
+            string selectedFolder = folderDialog.FilePaths[0];
+
+            // 2) Find .csproj files
+            string[] csprojFiles;
+            try
+            {
+                csprojFiles = Directory.GetFiles(selectedFolder, "*.csproj", SearchOption.AllDirectories)
+                                       .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                                       .ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to enumerate .csproj files: {ex.Message}");
+                return;
+            }
+
+            if (csprojFiles.Length == 0)
+            {
+                Console.WriteLine("No .csproj files found under selected folder.");
+                return;
+            }
+
+            // 3) If multiple projects, let user pick; if single, use it
+            string chosenProject;
+            if (csprojFiles.Length == 1)
+            {
+                chosenProject = csprojFiles[0];
+            }
+            else
+            {
+                var items = csprojFiles.Select(p => Path.GetRelativePath(selectedFolder, p)).ToArray();
+
+                Application.Init();
+                var dlg = new Dialog("Choose Project", 80, 20);
+                var listView = new ListView(items) { X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill() - 2 };
+                dlg.Add(listView);
+
+                var ok = new Button("Open") { X = Pos.Center() - 10, Y = Pos.AnchorEnd(1) };
+                ok.Clicked += () => Application.RequestStop();
+                dlg.AddButton(ok);
+
+                var cancel = new Button("Cancel") { X = Pos.Center() + 2, Y = Pos.AnchorEnd(1) };
+                cancel.Clicked += () =>
+                {
+                    listView.SelectedItem = -1;
+                    Application.RequestStop();
+                };
+                dlg.AddButton(cancel);
+
+                Application.Run(dlg);
+                Application.Shutdown();
+
+                int sel = listView.SelectedItem;
+                if (sel < 0 || sel >= csprojFiles.Length)
+                {
+                    Console.WriteLine("No project selected.");
+                    return;
+                }
+                chosenProject = csprojFiles[sel];
+            }
+
+            // 4) Present a small menu: List, Add, Remove, Back
+            while (true)
+            {
+                Console.WriteLine($"\nManaging packages for: {chosenProject}");
+                Console.WriteLine("Choose an action:");
+                Console.WriteLine("1. List installed packages");
+                Console.WriteLine("2. Add package");
+                Console.WriteLine("3. Remove package");
+                Console.WriteLine("4. Back");
+
+                Console.Write("Your choice: ");
+                string? opt = Console.ReadLine();
+                if (opt == "1")
+                {
+                    // dotnet list <proj> package
+                    var (outp, err, code) = RunProcessCapture("dotnet", $"list {QuotePath(chosenProject)} package", Path.GetDirectoryName(chosenProject));
+                    string full = $"Exit code: {code}\n\nSTDOUT:\n{outp}\n\nSTDERR:\n{err}";
+                    ShowTextOutputDialog("Installed Packages", full, 100, 30);
+                }
+                else if (opt == "2")
+                {
+                    // Prompt for package name and optional version
+                    Console.Write("Package id (e.g. Newtonsoft.Json): ");
+                    string? pkg = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(pkg))
+                    {
+                        Console.WriteLine("No package id provided.");
+                        continue;
+                    }
+                    Console.Write("Version (leave empty for latest): ");
+                    string? version = Console.ReadLine();
+
+                    string args = $"add {QuotePath(chosenProject)} package {pkg}";
+                    if (!string.IsNullOrWhiteSpace(version))
+                    {
+                        args += $" --version {version}";
+                    }
+
+                    Console.WriteLine($"Running: dotnet {args}");
+                    var (outp, err, code) = RunProcessCapture("dotnet", args, Path.GetDirectoryName(chosenProject));
+                    string full = $"Exit code: {code}\n\nSTDOUT:\n{outp}\n\nSTDERR:\n{err}";
+                    ShowTextOutputDialog("Add Package Result", full, 100, 20);
+                }
+                else if (opt == "3")
+                {
+                    Console.Write("Package id to remove (e.g. Newtonsoft.Json): ");
+                    string? pkg = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(pkg))
+                    {
+                        Console.WriteLine("No package id provided.");
+                        continue;
+                    }
+
+                    string args = $"remove {QuotePath(chosenProject)} package {pkg}";
+                    Console.WriteLine($"Running: dotnet {args}");
+                    var (outp, err, code) = RunProcessCapture("dotnet", args, Path.GetDirectoryName(chosenProject));
+                    string full = $"Exit code: {code}\n\nSTDOUT:\n{outp}\n\nSTDERR:\n{err}";
+                    ShowTextOutputDialog("Remove Package Result", full, 100, 20);
+                }
+                else if (opt == "4")
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid option.");
+                }
+            }
+        }
+
+        // Helper to quote a path if it contains spaces (used when passing a project path)
+        static string QuotePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return "\"\"";
+            if (path.Contains(" ")) return $"\"{path}\"";
+            return path;
+        }
     }
 }
