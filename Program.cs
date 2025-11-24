@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Terminal.Gui;
 
 namespace Gohub
@@ -41,7 +42,7 @@ namespace Gohub
             Console.WriteLine("4. Create a new C# Project");
             Console.WriteLine("5. Open a C# Project");
             Console.WriteLine("6. Manage NuGet Packages");
-            Console.WriteLine("7. View Documentation(comming soon...)");
+            Console.WriteLine("7. View Documentation");
             Console.WriteLine("8. Settings(comming soon...)");
             Console.WriteLine("9. About(comming soon...)");
             Console.WriteLine("10. Help(comming soon...)");
@@ -84,6 +85,11 @@ namespace Gohub
                 ManageNuGetPackages();
                 Menu();
             }
+            else if (option == "7")
+            {
+                OpenUrl("https://github.com/ikobiz/CS-Hub/blob/main/README.md");
+            }
+
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
@@ -754,6 +760,51 @@ namespace Gohub
             if (string.IsNullOrWhiteSpace(path)) return "\"\"";
             if (path.Contains(" ")) return $"\"{path}\"";
             return path;
+        }
+
+        static void OpenUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                Console.WriteLine("No URL provided.");
+                return;
+            }
+
+            // Basic validation
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uriResult) ||
+                (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+            {
+                Console.WriteLine("Not a valid HTTP/HTTPS URL.");
+                return;
+            }
+
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On .NET Core/5+ this is the recommended way on Windows
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                {
+                    // xdg-open opens the URL in the default browser on most Linux distros
+                    Process.Start("xdg-open", url);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    // open uses the default handler on macOS
+                    Process.Start("open", url);
+                }
+                else
+                {
+                    // Fallback: try UseShellExecute
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to open URL: {ex.Message}");
+            }
         }
     }
 }
