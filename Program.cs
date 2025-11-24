@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -82,18 +83,26 @@ namespace Gohub
             }
             else if (option == "6")
             {
-                // <-- wired ManageNuGetPackages to menu option 6
                 ManageNuGetPackages();
                 Menu();
             }
             else if (option == "7")
             {
                 OpenUrl("https://github.com/ikobiz/CS-Hub/blob/main/README.md");
+                Menu();
             }
-            else if (option == "12")
+            else if (option == "8")
             {
-                OpenUrl("https://github.com/ikobiz/CS-Hub");
-
+                // Settings placeholder
+                Console.WriteLine("Settings are coming soon...");
+                Menu();
+            }
+            else if (option == "9")
+            {
+                // About placeholder
+                Console.WriteLine("CS-Hub — A terminal GUI hub for C# (v0.0.2+).");
+                Menu();
+            }
             else if (option == "10")
             {
                 ShowHelp();
@@ -102,6 +111,12 @@ namespace Gohub
             else if (option == "11")
             {
                 OpenUrl("https://discord.gg/BXMzNu4t");
+                Menu();
+            }
+            else if (option == "12")
+            {
+                OpenUrl("https://github.com/ikobiz/CS-Hub");
+                Menu();
             }
             else
             {
