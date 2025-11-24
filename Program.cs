@@ -8,6 +8,10 @@ namespace Gohub
     class Program
     {
         static string? selectedFile;
+        static List<string>? projectCsFiles;
+        static int currentFileIndex = -1;
+        static string? pendingOpenFile = null;
+        static int pendingOpenIndex = -1;
 
         static void Main(string[] args)
         {
@@ -20,9 +24,6 @@ namespace Gohub
             Console.WriteLine("Welcome to C# Hub!");
             Menu();
         }
-
-
-
 
         static void Exit()
         {
@@ -37,6 +38,13 @@ namespace Gohub
             Console.WriteLine("2. Create A File");
             Console.WriteLine("3. Exit");
             Console.WriteLine("4. Create a new C# Project");
+            Console.WriteLine("5. Open a C# Project");
+            Console.WriteLine("6. Manage NuGet Packages(comming soon...)");
+            Console.WriteLine("7. View Documentation(comming soon...)");
+            Console.WriteLine("8. Settings(comming soon...)");
+            Console.WriteLine("9. About(comming soon...)");
+            Console.WriteLine("10. Help(comming soon...)");
+            Console.WriteLine("11.Discord Server(comming soon...)");
 
             Console.Write("Your Choice: ");
             string? option = Console.ReadLine();
@@ -64,11 +72,108 @@ namespace Gohub
                 CreateCSharpProjectIntro();
                 Menu();
             }
+            else if (option == "5")
+            {
+                OpenCSharpProject();
+                Menu();
+            }
         
             else
             {
                 Console.WriteLine("Invalid option. Please try again.");
                 Menu();
+            }
+        }
+
+        static void OpenCSharpProject()
+        {
+            Application.Init();
+
+            var folderDialog = new OpenDialog("Open C# Project Folder", "Select project folder")
+            {
+                AllowsMultipleSelection = false,
+                CanChooseDirectories = true,
+                CanChooseFiles = false
+            };
+
+            Application.Run(folderDialog);
+            Application.Shutdown();
+
+            if (folderDialog.FilePaths.Count == 0)
+            {
+                Console.WriteLine("No folder selected.");
+                return;
+            }
+
+            string selectedFolder = folderDialog.FilePaths[0];
+
+            string[] csFiles;
+            try
+            {
+                csFiles = Directory.GetFiles(selectedFolder, "*.cs", SearchOption.AllDirectories)
+                                   .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                                   .ToArray();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to enumerate .cs files: {ex.Message}");
+                return;
+            }
+
+            if (csFiles.Length == 0)
+            {
+                Console.WriteLine("No .cs files found in the selected folder.");
+                return;
+            }
+
+            // Build items for list view: show relative paths (relative to selected folder)
+            var items = csFiles.Select(p => Path.GetRelativePath(selectedFolder, p)).ToArray();
+
+            Application.Init();
+            var dlg = new Dialog("Project .cs Files", 80, 20);
+
+            var listView = new ListView(items)
+            {
+                X = 0,
+                Y = 0,
+                Width = Dim.Fill(),
+                Height = Dim.Fill() - 2
+            };
+
+            dlg.Add(listView);
+
+            var openBtn = new Button("Open")
+            {
+                X = Pos.Center() - 10,
+                Y = Pos.AnchorEnd(1)
+            };
+            openBtn.Clicked += () =>
+            {
+                int idx = listView.SelectedItem;
+                if (idx >= 0 && idx < csFiles.Length)
+                {
+                    projectCsFiles = csFiles.ToList();
+                    currentFileIndex = idx;
+                    Application.RequestStop();
+                }
+            };
+            dlg.AddButton(openBtn);
+
+            var cancelBtn = new Button("Cancel")
+            {
+                X = Pos.Center() + 2,
+                Y = Pos.AnchorEnd(1)
+            };
+            cancelBtn.Clicked += () => Application.RequestStop();
+            dlg.AddButton(cancelBtn);
+
+            Application.Run(dlg);
+            Application.Shutdown();
+
+            if (projectCsFiles != null && currentFileIndex >= 0 && currentFileIndex < projectCsFiles.Count)
+            {
+                // Open selected file in editor with navigation enabled
+                Edit(projectCsFiles[currentFileIndex], projectCsFiles, currentFileIndex);
             }
         }
 
@@ -241,8 +346,12 @@ namespace Gohub
             Application.Shutdown();
         }
 
-        static void Edit(string file)
+        static void Edit(string file, List<string>? projectFiles = null, int index = -1)
 {
+    // Track passed-in project files/index
+    projectCsFiles = projectFiles;
+    currentFileIndex = index;
+
     Application.Init();
 
     var top = Application.Top;
@@ -265,105 +374,160 @@ namespace Gohub
     win.Add(textView);
 
     // Load file contents
-    if (File.Exists(file))
+    try
     {
-        textView.Text = File.ReadAllText(file);
+        textView.Text = File.Exists(file) ? File.ReadAllText(file) : "";
     }
-    else
+    catch (Exception ex)
     {
-        textView.Text = "";
+        textView.Text = $"// Error reading file: {ex.Message}";
     }
 
-    // Find feature
+    // Find feature (kept as in your original code)
     void Find()
-{
-    var findDialog = new Dialog("Find Text", 60, 20);
-    var input = new TextField("")
     {
-        X = 1,
-        Y = 1,
-        Width = 50
-    };
-    findDialog.Add(new Label("Search for:") { X = 1, Y = 0 });
-    findDialog.Add(input);
-
-    ListView? resultsList = null;
-    List<int> matchPositions = new();
-
-    var findButton = new Button("Find", is_default: true);
-    findButton.Clicked += () =>
-    {
-        string? searchTerm = input.Text?.ToString();
-        matchPositions.Clear();
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
+        var findDialog = new Dialog("Find Text", 60, 20);
+        var input = new TextField("")
         {
-            string content = textView.Text.ToString();
-            int index = 0;
-            while ((index = content.IndexOf(searchTerm, index, StringComparison.OrdinalIgnoreCase)) != -1)
-            {
-                matchPositions.Add(index);
-                index += searchTerm.Length;
-            }
+            X = 1,
+            Y = 1,
+            Width = 50
+        };
+        findDialog.Add(new Label("Search for:") { X = 1, Y = 0 });
+        findDialog.Add(input);
 
-            if (matchPositions.Count > 0)
+        ListView? resultsList = null;
+        List<int> matchPositions = new();
+
+        var findButton = new Button("Find", is_default: true);
+        findButton.Clicked += () =>
+        {
+            string? searchTerm = input.Text?.ToString();
+            matchPositions.Clear();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                var items = matchPositions.Select(pos =>
+                string content = textView.Text.ToString();
+                int idx = 0;
+                while ((idx = content.IndexOf(searchTerm, idx, StringComparison.OrdinalIgnoreCase)) != -1)
                 {
-                    int line = content.Substring(0, pos).Count(c => c == '\n') + 1;
-                    return $"Line {line}, Pos {pos}";
-                }).ToList();
+                    matchPositions.Add(idx);
+                    idx += searchTerm.Length;
+                }
 
-                resultsList.SetSource(items);
+                if (matchPositions.Count > 0)
+                {
+                    var items = matchPositions.Select(pos =>
+                    {
+                        int line = content.Substring(0, pos).Count(c => c == '\n') + 1;
+                        return $"Line {line}, Pos {pos}";
+                    }).ToList();
+
+                    resultsList.SetSource(items);
+                }
+                else
+                {
+                    MessageBox.ErrorQuery(40, 7, "Not Found", $"'{searchTerm}' not found.", "OK");
+                }
             }
-            else
-            {
-                MessageBox.ErrorQuery(40, 7, "Not Found", $"'{searchTerm}' not found.", "OK");
-            }
-        }
-    };
+        };
 
-    resultsList = new ListView()
-    {
-        X = 1,
-        Y = 3,
-        Width = 55,
-        Height = 10
-    };
-    resultsList.OpenSelectedItem += (args) =>
-    {
-        int pos = matchPositions[args.Item];
-        textView.CursorPosition = new Point(pos, 0);
-        textView.ScrollTo(pos);
-        Application.RequestStop();
-    };
+        resultsList = new ListView()
+        {
+            X = 1,
+            Y = 3,
+            Width = 55,
+            Height = 10
+        };
+        resultsList.OpenSelectedItem += (args) =>
+        {
+            int pos = matchPositions[args.Item];
+            textView.CursorPosition = new Point(pos, 0);
+            textView.ScrollTo(pos);
+            Application.RequestStop();
+        };
 
-    findDialog.Add(resultsList);
-    findDialog.AddButton(findButton);
-            var closeButton = new Button("Close");
-            closeButton.Clicked += () => Application.RequestStop();
-            findDialog.AddButton(closeButton);
+        findDialog.Add(resultsList);
+        findDialog.AddButton(findButton);
+        var closeButton = new Button("Close");
+        closeButton.Clicked += () => Application.RequestStop();
+        findDialog.AddButton(closeButton);
 
-    Application.Run(findDialog);
-}
+        Application.Run(findDialog);
+    }
 
-    // Menu bar with Save, Find, and Quit
+    // Add menu bar with Save, Find, Prev, Next, Quit
     top.Add(new MenuBar(new MenuBarItem[]
     {
         new MenuBarItem("_File", new MenuItem[]
         {
             new MenuItem("_Save", "Ctrl+S", () =>
             {
-                File.WriteAllText(file, textView.Text.ToString());
-                MessageBox.Query(40, 7, "Saved", "File saved successfully.", "OK");
+                try
+                {
+                    File.WriteAllText(file, textView.Text.ToString());
+                    MessageBox.Query(40, 7, "Saved", "File saved successfully.", "OK");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.ErrorQuery(50, 7, "Save Error", $"Failed to save: {ex.Message}", "OK");
+                }
             }),
             new MenuItem("_Find", "Ctrl+F", () => Find()),
+            new MenuItem("_Prev", "Ctrl+Left", () =>
+            {
+                if (projectCsFiles != null && index > 0)
+                {
+                    // Save current file and schedule previous for opening
+                    try { File.WriteAllText(file, textView.Text.ToString()); } catch { }
+                    pendingOpenFile = projectCsFiles[index - 1];
+                    pendingOpenIndex = index - 1;
+                    Application.RequestStop();
+                }
+                else
+                {
+                    MessageBox.Query(40, 7, "Info", "No previous file.", "OK");
+                }
+            }),
+            new MenuItem("_Next", "Ctrl+Right", () =>
+            {
+                if (projectCsFiles != null && index >= 0 && index < projectCsFiles.Count - 1)
+                {
+                    // Save current file and schedule next for opening
+                    try { File.WriteAllText(file, textView.Text.ToString()); } catch { }
+                    pendingOpenFile = projectCsFiles[index + 1];
+                    pendingOpenIndex = index + 1;
+                    Application.RequestStop();
+                }
+                else
+                {
+                    MessageBox.Query(40, 7, "Info", "No next file.", "OK");
+                }
+            }),
             new MenuItem("_Quit", "Ctrl+Q", () => Application.RequestStop())
         })
     }));
 
     Application.Run();
     Application.Shutdown();
+
+    // If navigation was requested, clear pending and open the next file
+    if (!string.IsNullOrEmpty(pendingOpenFile))
+    {
+        var next = pendingOpenFile;
+        var nextIndex = pendingOpenIndex;
+        pendingOpenFile = null;
+        pendingOpenIndex = -1;
+        if (File.Exists(next))
+        {
+            Edit(next, projectCsFiles, nextIndex);
+            return;
+        }
+        else
+        {
+            Console.WriteLine($"File not found: {next}");
+        }
+    }
 }
     }
 }
