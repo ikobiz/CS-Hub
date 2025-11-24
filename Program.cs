@@ -990,12 +990,18 @@ namespace Gohub
         static void ShowSettingsDialog(string settingsPath)
         {
             Application.Init();
-            var dlg = new Dialog("Settings", 50, 12);
+
+            var dlg = new Dialog("Settings", 50, 14);
+
+            var infoLabel = new Label(2, 0, "Menu Style: Choose how the main menu is displayed.") { Width = 46 };
+            dlg.Add(infoLabel);
+            var descLabel = new Label(2, 1, "Full: Shows all options. Minimal: Shows only essentials.") { Width = 46 };
+            dlg.Add(descLabel);
 
             var currentStyle = GetMenuStyle(settingsPath);
             int selected = currentStyle == MenuStyle.Minimal ? 1 : 0;
 
-            var radio = new RadioGroup(2, 2, new NStack.ustring[] { "Full", "Minimal" }, selected);
+            var radio = new RadioGroup(2, 3, new NStack.ustring[] { "Full", "Minimal" }, selected);
             dlg.Add(radio);
 
             var saveBtn = new Button("Save") { X = 2, Y = 7 };
