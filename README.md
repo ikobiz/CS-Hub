@@ -112,26 +112,10 @@ Quality & limitations
 
 ---
 
-## Roadmap / Next Steps
-
-Possible improvements (high-value, low-risk):
-- Convert Add/Remove package prompts to Terminal.Gui dialogs.
-- Parse `dotnet list` output to present installed packages in a selectable list (allow removal by selection).
-- Rework editor to reuse a single Terminal.Gui Application instance and swap file buffers (smoother user experience).
-- Add syntax highlighting (via a text buffer highlighter).
-- Add tests for process helper and path-quoting helpers.
-
-If you'd like, I can:
-- Convert Add/Remove prompts into Terminal.Gui dialogs.
-- Parse package list output and present a selectable list for removal.
-- Produce a small release `RELEASE_NOTES.md` and tag suggestions.
-
----
-
 ## License
 
 See `LICENSE` in repository root.
 
 ---
 
-Thanks for using CS‑Hub — tell me which improvement you'd like next and I’ll prepare the patch.
+Thanks for using CS‑Hub — you can always dm me in discord, my username in ikobiz
