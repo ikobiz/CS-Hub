@@ -50,6 +50,8 @@ namespace Gohub
             Console.WriteLine("4. Create a new C# Project");
             Console.WriteLine("5. Open a C# Project");
             Console.WriteLine("6. Manage NuGet Packages");
+            Console.Write("Your Choice: ");
+            string option = Console.ReadLine();
             switch (option)
             {
                 case "4":
@@ -68,13 +70,13 @@ namespace Gohub
                     Console.WriteLine("Invalid option. Please try again.");
                     Menu2();
                     break;
-            }   
+            }
 
         }
 
         static void menu2_2()
         {
-            Console.WriteLine("7. View Documentation");\
+            Console.WriteLine("7. View Documentation");
             Console.WriteLine("9. About");
             Console.WriteLine("10. Help");
             Console.WriteLine("11. Discord Server");
@@ -91,31 +93,35 @@ namespace Gohub
                     // About placeholder
                     Console.WriteLine("CS-Hub — A terminal GUI hub for C# (v0.0.3.4+).");
                     Menu2();
-                    break;   
+                    break;
                 case "10":
                     ShowHelp();
                     Menu2();
-                    break;    
+                    break;
                 case "11":
                     OpenUrl("https://discord.gg/BXMzNu4t");
                     Menu2();
                     break;
                 case "12":
-                    OpenUrl("https://github.com/ikobiz/CS-Hub"); 
+                    OpenUrl("https://github.com/ikobiz/CS-Hub");
                     Menu2();
-                    break;   
-
+                    break;
+                default:
+                    Console.WriteLine("Invalid option. Please try again.");
+                    Menu2();
+                    break;
+            }
         }
 
         static void Menu2()
         {
-            Console.WriteLine("\nChoose n option to continue:")
+            Console.WriteLine("\nChoose n option to continue:");
             Console.WriteLine("1. Edit A File");
             Console.WriteLine("2. Create A File");
             Console.WriteLine("3. Exit");
-            Console.WriteLine("4. C# Options")
-            Console.WriteLine("5. Online tools and resources")
-            Console.WriteLine("6. Settings(comming soon...)");
+            Console.WriteLine("4. C# Options");
+            Console.WriteLine("5. Online tools and resources");
+            Console.WriteLine("6. Settings(comming soon...);");
             Console.Write("Your Choice: ");
             string option = Console.ReadLine();
             switch (option)
@@ -154,7 +160,7 @@ namespace Gohub
                     Menu2();
                     break;
             }
-        }
+    }
 
 
         static void Menu()
@@ -1057,5 +1063,5 @@ If you need more detail for any item, pick a menu number and I can expand the he
         }
 
         #endregion
-    }
-}
+
+            }    }
