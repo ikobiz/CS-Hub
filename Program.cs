@@ -10,11 +10,15 @@ namespace Gohub
 {
     class Program
     {
+        #region Fields
         static string? selectedFile;
         static List<string>? projectCsFiles;
         static int currentFileIndex = -1;
         static string? pendingOpenFile = null;
         static int pendingOpenIndex = -1;
+        #endregion
+
+        #region Entry / App Control
 
         static void Main(string[] args)
         {
@@ -33,6 +37,10 @@ namespace Gohub
             Application.Shutdown();
             Environment.Exit(0);
         }
+
+        #endregion
+
+        #region Menu
 
         static void Menu()
         {
@@ -124,6 +132,10 @@ namespace Gohub
                 Menu();
             }
         }
+
+        #endregion
+
+        #region Project Management
 
         static void OpenCSharpProject()
         {
@@ -256,48 +268,49 @@ namespace Gohub
                 projectTypeOption = "1";
                 CreateCSharpProject(projectPath, projectName, projectTypeOption);
             }
-
-
         }
 
         static void CreateCSharpProject(string projectPath, string projectName, string projectType)
         {
 
-#region Create C# Project Using dotnet CLI
+            #region Create C# Project Using dotnet CLI
 
             ProcessStartInfo psi = new ProcessStartInfo
-        {
-            FileName = "cmd.exe",
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            {
+                FileName = "cmd.exe",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        Process process = new Process { StartInfo = psi };
-        process.Start();
+            Process process = new Process { StartInfo = psi };
+            process.Start();
 
-        // 4. Pass the commands
-        process.StandardInput.WriteLine($"cd /d \"{projectPath}\"");  // Command 1: Change directory
-        process.StandardInput.WriteLine($"dotnet new {(projectType == "1" ? "console" : projectType == "2" ? "classlib" : projectType == "3" ? "blazorwasm" : projectType == "4" ? "webapi" : projectType == "5" ? "wpf" : "winforms")} -n \"{projectName}\""); // Command 2: Create new project
-        /// process.StandardInput.WriteLine("echo %CD%");   // Command 2: Print current directory
+            // 4. Pass the commands
+            process.StandardInput.WriteLine($"cd /d \"{projectPath}\"");  // Command 1: Change directory
+            process.StandardInput.WriteLine($"dotnet new {(projectType == "1" ? "console" : projectType == "2" ? "classlib" : projectType == "3" ? "blazorwasm" : projectType == "4" ? "webapi" : projectType == "5" ? "wpf" : "winforms")} -n \"{projectName}\""); // Command 2: Create new project
+            /// process.StandardInput.WriteLine("echo %CD%");   // Command 2: Print current directory
 
-        process.StandardInput.Flush();
-        process.StandardInput.Close(); 
+            process.StandardInput.Flush();
+            process.StandardInput.Close();
 
-        process.WaitForExit();
+            process.WaitForExit();
 
-        string output = process.StandardOutput.ReadToEnd();
-        
-        Console.WriteLine("--- OUTPUT ---");
-        // The output will contain "C:\Users"
-        Console.WriteLine(output);
+            string output = process.StandardOutput.ReadToEnd();
 
-#endregion
+            Console.WriteLine("--- OUTPUT ---");
+            // The output will contain "C:\Users"
+            Console.WriteLine(output);
+
+            #endregion
         }
 
-        #region Create File
+        #endregion
 
+        #region File Operations
+
+        #region Create File
         static void CreateFile()
         {
             Application.Init();
@@ -386,191 +399,199 @@ namespace Gohub
             Application.Shutdown();
         }
 
+        #endregion
+
+        #region Editor
+
         static void Edit(string file, List<string>? projectFiles = null, int index = -1)
-{
-    // Track passed-in project files/index
-    projectCsFiles = projectFiles;
-    currentFileIndex = index;
-
-    Application.Init();
-
-    var top = Application.Top;
-    var win = new Window($"Editing: {Path.GetFileName(file)}")
-    {
-        X = 0,
-        Y = 1,
-        Width = Dim.Fill(),
-        Height = Dim.Fill()
-    };
-    top.Add(win);
-
-    var textView = new TextView()
-    {
-        X = 0,
-        Y = 0,
-        Width = Dim.Fill(),
-        Height = Dim.Fill()
-    };
-    win.Add(textView);
-
-    // Load file contents
-    try
-    {
-        textView.Text = File.Exists(file) ? File.ReadAllText(file) : "";
-    }
-    catch (Exception ex)
-    {
-        textView.Text = $"// Error reading file: {ex.Message}";
-    }
-
-    // Find feature (kept as in your original code)
-    void Find()
-    {
-        var findDialog = new Dialog("Find Text", 60, 20);
-        var input = new TextField("")
         {
-            X = 1,
-            Y = 1,
-            Width = 50
-        };
-        findDialog.Add(new Label("Search for:") { X = 1, Y = 0 });
-        findDialog.Add(input);
+            // Track passed-in project files/index
+            projectCsFiles = projectFiles;
+            currentFileIndex = index;
 
-        ListView? resultsList = null;
-        List<int> matchPositions = new();
+            Application.Init();
 
-        var findButton = new Button("Find", is_default: true);
-        findButton.Clicked += () =>
-        {
-            string? searchTerm = input.Text?.ToString();
-            matchPositions.Clear();
-
-            if (!string.IsNullOrWhiteSpace(searchTerm))
+            var top = Application.Top;
+            var win = new Window($"Editing: {Path.GetFileName(file)}")
             {
-                string content = textView.Text.ToString();
-                int idx = 0;
-                while ((idx = content.IndexOf(searchTerm, idx, StringComparison.OrdinalIgnoreCase)) != -1)
-                {
-                    matchPositions.Add(idx);
-                    idx += searchTerm.Length;
-                }
+                X = 0,
+                Y = 1,
+                Width = Dim.Fill(),
+                Height = Dim.Fill()
+            };
+            top.Add(win);
 
-                if (matchPositions.Count > 0)
+            var textView = new TextView()
+            {
+                X = 0,
+                Y = 0,
+                Width = Dim.Fill(),
+                Height = Dim.Fill()
+            };
+            win.Add(textView);
+
+            // Load file contents
+            try
+            {
+                textView.Text = File.Exists(file) ? File.ReadAllText(file) : "";
+            }
+            catch (Exception ex)
+            {
+                textView.Text = $"// Error reading file: {ex.Message}";
+            }
+
+            #region Find (inner)
+            // Find feature (kept as in your original code)
+            void Find()
+            {
+                var findDialog = new Dialog("Find Text", 60, 20);
+                var input = new TextField("")
                 {
-                    var items = matchPositions.Select(pos =>
+                    X = 1,
+                    Y = 1,
+                    Width = 50
+                };
+                findDialog.Add(new Label("Search for:") { X = 1, Y = 0 });
+                findDialog.Add(input);
+
+                ListView? resultsList = null;
+                List<int> matchPositions = new();
+
+                var findButton = new Button("Find", is_default: true);
+                findButton.Clicked += () =>
+                {
+                    string? searchTerm = input.Text?.ToString();
+                    matchPositions.Clear();
+
+                    if (!string.IsNullOrWhiteSpace(searchTerm))
                     {
-                        int line = content.Substring(0, pos).Count(c => c == '\n') + 1;
-                        return $"Line {line}, Pos {pos}";
-                    }).ToList();
+                        string content = textView.Text.ToString();
+                        int idx = 0;
+                        while ((idx = content.IndexOf(searchTerm, idx, StringComparison.OrdinalIgnoreCase)) != -1)
+                        {
+                            matchPositions.Add(idx);
+                            idx += searchTerm.Length;
+                        }
 
-                    resultsList.SetSource(items);
+                        if (matchPositions.Count > 0)
+                        {
+                            var items = matchPositions.Select(pos =>
+                            {
+                                int line = content.Substring(0, pos).Count(c => c == '\n') + 1;
+                                return $"Line {line}, Pos {pos}";
+                            }).ToList();
+
+                            resultsList.SetSource(items);
+                        }
+                        else
+                        {
+                            MessageBox.ErrorQuery(40, 7, "Not Found", $"'{searchTerm}' not found.", "OK");
+                        }
+                    }
+                };
+
+                resultsList = new ListView()
+                {
+                    X = 1,
+                    Y = 3,
+                    Width = 55,
+                    Height = 10
+                };
+                resultsList.OpenSelectedItem += (args) =>
+                {
+                    int pos = matchPositions[args.Item];
+                    textView.CursorPosition = new Point(pos, 0);
+                    textView.ScrollTo(pos);
+                    Application.RequestStop();
+                };
+
+                findDialog.Add(resultsList);
+                findDialog.AddButton(findButton);
+                var closeButton = new Button("Close");
+                closeButton.Clicked += () => Application.RequestStop();
+                findDialog.AddButton(closeButton);
+
+                Application.Run(findDialog);
+            }
+            #endregion
+
+            // Add menu bar with Save, Find, Prev, Next, Quit
+            top.Add(new MenuBar(new MenuBarItem[]
+            {
+                new MenuBarItem("_File", new MenuItem[]
+                {
+                    new MenuItem("_Save", "Ctrl+S", () =>
+                    {
+                        try
+                        {
+                            File.WriteAllText(file, textView.Text.ToString());
+                            MessageBox.Query(40, 7, "Saved", "File saved successfully.", "OK");
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.ErrorQuery(50, 7, "Save Error", $"Failed to save: {ex.Message}", "OK");
+                        }
+                    }),
+                    new MenuItem("_Find", "Ctrl+F", () => Find()),
+                    new MenuItem("_Prev", "Ctrl+Left", () =>
+                    {
+                        if (projectCsFiles != null && index > 0)
+                        {
+                            // Save current file and schedule previous for opening
+                            try { File.WriteAllText(file, textView.Text.ToString()); } catch { }
+                            pendingOpenFile = projectCsFiles[index - 1];
+                            pendingOpenIndex = index - 1;
+                            Application.RequestStop();
+                        }
+                        else
+                        {
+                            MessageBox.Query(40, 7, "Info", "No previous file.", "OK");
+                        }
+                    }),
+                    new MenuItem("_Next", "Ctrl+Right", () =>
+                    {
+                        if (projectCsFiles != null && index >= 0 && index < projectCsFiles.Count - 1)
+                        {
+                            // Save current file and schedule next for opening
+                            try { File.WriteAllText(file, textView.Text.ToString()); } catch { }
+                            pendingOpenFile = projectCsFiles[index + 1];
+                            pendingOpenIndex = index + 1;
+                            Application.RequestStop();
+                        }
+                        else
+                        {
+                            MessageBox.Query(40, 7, "Info", "No next file.", "OK");
+                        }
+                    }),
+                    new MenuItem("_Quit", "Ctrl+Q", () => Application.RequestStop())
+                })
+            }));
+
+            Application.Run();
+            Application.Shutdown();
+
+            // If navigation was requested, clear pending and open the next file
+            if (!string.IsNullOrEmpty(pendingOpenFile))
+            {
+                var next = pendingOpenFile;
+                var nextIndex = pendingOpenIndex;
+                pendingOpenFile = null;
+                pendingOpenIndex = -1;
+                if (File.Exists(next))
+                {
+                    Edit(next, projectCsFiles, nextIndex);
+                    return;
                 }
                 else
                 {
-                    MessageBox.ErrorQuery(40, 7, "Not Found", $"'{searchTerm}' not found.", "OK");
+                    Console.WriteLine($"File not found: {next}");
                 }
             }
-        };
-
-        resultsList = new ListView()
-        {
-            X = 1,
-            Y = 3,
-            Width = 55,
-            Height = 10
-        };
-        resultsList.OpenSelectedItem += (args) =>
-        {
-            int pos = matchPositions[args.Item];
-            textView.CursorPosition = new Point(pos, 0);
-            textView.ScrollTo(pos);
-            Application.RequestStop();
-        };
-
-        findDialog.Add(resultsList);
-        findDialog.AddButton(findButton);
-        var closeButton = new Button("Close");
-        closeButton.Clicked += () => Application.RequestStop();
-        findDialog.AddButton(closeButton);
-
-        Application.Run(findDialog);
-    }
-
-    // Add menu bar with Save, Find, Prev, Next, Quit
-    top.Add(new MenuBar(new MenuBarItem[]
-    {
-        new MenuBarItem("_File", new MenuItem[]
-        {
-            new MenuItem("_Save", "Ctrl+S", () =>
-            {
-                try
-                {
-                    File.WriteAllText(file, textView.Text.ToString());
-                    MessageBox.Query(40, 7, "Saved", "File saved successfully.", "OK");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.ErrorQuery(50, 7, "Save Error", $"Failed to save: {ex.Message}", "OK");
-                }
-            }),
-            new MenuItem("_Find", "Ctrl+F", () => Find()),
-            new MenuItem("_Prev", "Ctrl+Left", () =>
-            {
-                if (projectCsFiles != null && index > 0)
-                {
-                    // Save current file and schedule previous for opening
-                    try { File.WriteAllText(file, textView.Text.ToString()); } catch { }
-                    pendingOpenFile = projectCsFiles[index - 1];
-                    pendingOpenIndex = index - 1;
-                    Application.RequestStop();
-                }
-                else
-                {
-                    MessageBox.Query(40, 7, "Info", "No previous file.", "OK");
-                }
-            }),
-            new MenuItem("_Next", "Ctrl+Right", () =>
-            {
-                if (projectCsFiles != null && index >= 0 && index < projectCsFiles.Count - 1)
-                {
-                    // Save current file and schedule next for opening
-                    try { File.WriteAllText(file, textView.Text.ToString()); } catch { }
-                    pendingOpenFile = projectCsFiles[index + 1];
-                    pendingOpenIndex = index + 1;
-                    Application.RequestStop();
-                }
-                else
-                {
-                    MessageBox.Query(40, 7, "Info", "No next file.", "OK");
-                }
-            }),
-            new MenuItem("_Quit", "Ctrl+Q", () => Application.RequestStop())
-        })
-    }));
-
-    Application.Run();
-    Application.Shutdown();
-
-    // If navigation was requested, clear pending and open the next file
-    if (!string.IsNullOrEmpty(pendingOpenFile))
-    {
-        var next = pendingOpenFile;
-        var nextIndex = pendingOpenIndex;
-        pendingOpenFile = null;
-        pendingOpenIndex = -1;
-        if (File.Exists(next))
-        {
-            Edit(next, projectCsFiles, nextIndex);
-            return;
         }
-        else
-        {
-            Console.WriteLine($"File not found: {next}");
-        }
-    }
-}
 
-        // --- Add these helpers and method into the Program class ---
+        #endregion
+
+        #region Process & UI Helpers
 
         static (string Stdout, string Stderr, int ExitCode) RunProcessCapture(string fileName, string arguments, string? workingDirectory = null, int timeoutMs = 120_000)
         {
@@ -631,6 +652,10 @@ namespace Gohub
             Application.Run(dlg);
             Application.Shutdown();
         }
+
+        #endregion
+
+        #region NuGet Management
 
         static void ManageNuGetPackages()
         {
@@ -782,6 +807,10 @@ namespace Gohub
             }
         }
 
+        #endregion
+
+        #region Utilities
+
         // Helper to quote a path if it contains spaces (used when passing a project path)
         static string QuotePath(string path)
         {
@@ -834,8 +863,6 @@ namespace Gohub
                 Console.WriteLine($"Failed to open URL: {ex.Message}");
             }
         }
-
-        // --- Add this method into the Program class (near other helpers like ShowTextOutputDialog) ---
 
         static void ShowHelp()
         {
@@ -891,5 +918,7 @@ If you need more detail for any item, pick a menu number and I can expand the he
 
             ShowTextOutputDialog("Help - CS-Hub", helpText, 100, 30);
         }
+
+        #endregion
     }
 }
