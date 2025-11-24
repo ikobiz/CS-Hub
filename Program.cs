@@ -45,8 +45,8 @@ namespace Gohub
             Console.WriteLine("7. View Documentation");
             Console.WriteLine("8. Settings(comming soon...)");
             Console.WriteLine("9. About(comming soon...)");
-            Console.WriteLine("10. Help(comming soon...)");
-            Console.WriteLine("11. Discord Server(comming soon...)");
+            Console.WriteLine("10. Help");
+            Console.WriteLine("11. Discord Server");
             Console.WriteLine("12. Github page");
 
             Console.Write("Your Choice: ");
